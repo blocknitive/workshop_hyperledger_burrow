@@ -1,0 +1,63 @@
+{
+	"Accounts": [
+		{
+			"Name": "Full",
+			"Amounts": [
+				{
+					"Type": "Native",
+					"Amount": 99999999999999
+				},
+				{
+					"Type": "Power",
+					"Amount": 9999999999
+				}
+			],
+			"Permissions": [
+				"all"
+			]
+		},
+		{
+			"Name": "Operator",
+			"Amounts": [
+				{
+					"Type": "Native",
+					"Amount": 9999999999
+				}
+			],
+			"Permissions": [
+				"send",
+				"call",
+				"createContract",
+				"name",
+				"hasRole"
+			]
+		},
+		{
+			"Name": "Writer",
+			"Amounts": [
+				{
+					"Type": "Native",
+					"Amount": 9999999999
+				}
+			],
+			"Permissions": [
+				"call",
+				"name",
+				"hasRole"
+			]
+		},
+		{
+			"Name": "RgReader",
+			"Amounts": [
+				{
+					"Type": "Native",
+					"Amount": 9999999999
+				}
+			],
+			"Permissions": [
+				"name",
+				"hasRole"
+			]
+		}
+	]
+}

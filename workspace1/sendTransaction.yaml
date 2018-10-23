@@ -1,0 +1,6 @@
+
+jobs:
+- name: sendTxTest1
+  send:
+    destination: 'D5E75E55A9F57BBEE8E3CAB4933BFB43170204C9'
+    amount: 5
