@@ -37,7 +37,7 @@ Nos movemos a una nueva carpeta, descargamos el binario 0.22 y descomprimimos el
 mkdir $HOME/burrowchain && cd $HOME/burrowchain
 wget https://github.com/hyperledger/burrow/releases/download/v0.22.0/burrow_0.22.0_Linux_x86_64.tar.gz
 tar xvf burrow_0.22.0_Linux_x86_64.tar.gz
-cp burrow /bin/burrow
+sudo cp burrow /bin/burrow
 PATH=$PATH:/bin/burrow
 ```
 
@@ -64,10 +64,10 @@ Con ese comando hemos creado una cuenta con todos los permisos (incluido el de v
 | RgReader      |   *[ name, hasRole ]*     |
 
 De esta manera, las cuentas creadas podrán realizar determinadas acciones de acuerdo con los permisos indicados:
-- Full: cuenta con todos los permisos de la plataforma, incluido el permiso del que deben disponer las cuentas validadoras (*bond*). Como nuestra red solo tendrá 1 nodo, y éste debe ser validador, sólo podrá haber una cuenta validadora. Además, podrá realizar cualquier operación.
-- Operator: dispone de los permisos necesarios para leer y ejecutar transacciones. Podrá desplegar smart contracts y llamar a sus funciones de lectura y escritura.
-- Writer: podrá realizar las mismas acciones que la cuenta anterior, excepto la de desplegar contratos.
-- RgReader: solo podrá tener acceso al registro de Burrow. No puede realizar transacciones ni llamar a código de smart contracts.
+- *Full*: cuenta con todos los permisos de la plataforma, incluido el permiso del que deben disponer las cuentas validadoras (*bond*). Como nuestra red solo tendrá 1 nodo, y éste debe ser validador, sólo podrá haber una cuenta validadora. Además, podrá realizar cualquier operación.
+- *Operator*: dispone de los permisos necesarios para leer y ejecutar transacciones. Podrá desplegar smart contracts y llamar a sus funciones de lectura y escritura.
+- *Writer*: podrá realizar las mismas acciones que la cuenta anterior, excepto la de desplegar contratos.
+- *RgReader*: solo podrá tener acceso al registro de Burrow. No puede realizar transacciones ni llamar a código de smart contracts.
 
 Una vez, realizada la especificación de las cuentas, pasamos a configurar el nodo Burrow. Utilizamos la opción ```burrow configure``` para crear el archivo de configuración *.toml* que después modificaremos a nuestro gusto.
 ```
@@ -103,7 +103,11 @@ burrow keys list
 
 Nos vemos a la carpeta ```workspace1``` y modificamos el fichero ```sendTransaction.yaml``` para cambiar la dirección destino por la clave pública de *Operator*. En ese archivo *-yaml* se pueden indicar los trabajos que queremos que se realicen. En este caso, el único trabajo que se ejecutará será el envío de la transacción.
 
-Para ejecutarlo, debemos seleccionar el fichero que contiene los trabajos que se quieren lanzar y la clave privada de la cuenta origen. La ejecución del trabajo produce un *output* que indica el hash de la transacción que se ha realizado.
+Para ejecutarlo, debemos seleccionar el fichero que contiene los trabajos que se quieren lanzar y la `address` de la cuenta origen. La ejecución del trabajo produce un *output* que indica el hash de la transacción que se ha realizado.
+
+```
+burrow deploy --address 8410DE15FDB4171D7A357B2DBF28C65F709EF084 -f sendTransaction.yaml
+```
 
 Con nuestro navegador podemos dirigirnos a la dirección ```localhost:26658/accounts``` y comprobar el cambio de “Amount” en ambas cuentas. ¡Acabamos de realizar nuestra primera transacción con Hyperledger Burrow!
 
