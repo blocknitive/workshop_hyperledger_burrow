@@ -1,0 +1,5 @@
+jobs:
+
+- name: deployRegistro
+  deploy:
+    contract: UsuarioRegistro.sol

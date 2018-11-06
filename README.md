@@ -111,7 +111,121 @@ burrow deploy --address 8410DE15FDB4171D7A357B2DBF28C65F709EF084 -f sendTransact
 
 Con nuestro navegador podemos dirigirnos a la dirección ```localhost:26658/accounts``` y comprobar el cambio de “Amount” en ambas cuentas. ¡Acabamos de realizar nuestra primera transacción con Hyperledger Burrow!
 
-Hasta aquí la primera parte del workshop. Dentro de poco publicaremos la segunda parte, dónde explicaremos como desplegar un contrato en Solidity y conectar con él desde un cliente Node.js.
 
-### Stay tuned BlockchainDevelopers!
+## 4. Despliegue de un contrato inteligente escrito en Solidity
 
+Hyperledger Burrow es capaz de ejecutar contratos inteligentes escritos en Solidity, pues cuenta con una EVM compatible con la de Ethereum. Además, es posible establecer diferentes permisos a las cuentas existentes, determinando así su comportamiento en la red. Vamos a centrarnos en estas dos funcionalidades, desplegando nuestro propio smart contract e interactuando con él.
+
+A continuación, se presenta el smart contract que usaremos ([UsuarioRegistro.sol](https://github.com/blocknitive/workshop_hyperledger_burrow/blob/master/workspace2/UsuarioRegistro.sol)). En Blocknitive tenemos pensado realizar un hackathon en un futuro y con este contrato pensamos mantener el registro de los usuarios que se apuntan a la competición. El contrato cuenta con dos funciones: una para leer el nombre del registro (no conlleva realizar una transacción, pues es `constant`) y otra para cambiarlo (conlleva la ejecución de una transacción).
+
+```JavaScript
+pragma solidity ^0.4.18;
+
+contract HackathonBlocknitive {
+    
+    string nombreRegistro;
+
+    constructor() {
+        nombreRegistro = "Hackathon de Blocknitive";
+    }
+
+    function getNombreRegistro() constant public returns (string) {
+        return nombreRegistro;
+    }
+
+    function setNombreRegistro(string _nombre) public {
+        nombreRegistro = _nombre;
+    }
+
+}
+
+```
+
+Antes de desplegar el contrato, nos aseguramos de que nuestro nodo Burrow está funcionando. Para ello, nos movemos a nuestro directorio de trabajo, leemos el log y verificamos si se están añadiendo nuevos bloques a la cadena. Para ello, ejecutamos el siguiente comando:
+```
+cd $HOME/workshop_hyperledger_burrow
+tail -5 burrow.log | grep height
+```
+
+Asimismo, podemos comprobar los puertos abiertos de escucha del nodo. Los puertos que mantiene abiertos depende de su configuración, pero tal y como lo indicamos en el [segundo paso](https://github.com/blocknitive/workshop_hyperledger_burrow#2-permisionado-de-cuentas-configuraci%C3%B3n-y-lanzamiento-de-burrow) del tutorial deben ser: `6060`, `26658`, `10997`, `9102` y `26656`.
+```
+netstat -nepal | grep burrow
+```
+
+Si vuestro nodo Burrow no funciona correctamente y no detectáis el error, siempre podéis reiniciar el estado de la cadena de bloques borrando el directorio oculto `.burrow`, dónde se guarda toda la información.
+
+
+Ahora, podemos desplegar el contrato escribiendo un sencillo *.yaml* dónde indicamos la acción. Ejecutamos el fichero `deploy.yaml` indicando el *address* de la cuenta que realizará la transacción. Para probar la capa de permisionado que proporciona la plataforma, vamos a utilizar la cuenta *Writer* (```burrow keys list | grep Writer```).
+```
+cd workspace2
+burrow deploy -f deploy.yaml -a [Writer address]
+```
+
+Esta ejecución falla indicándonos que la cuenta seleccionada no tiene el permiso necesario para realizar esa acción, *CreateContract*. Si queremos desplegar el contrato, debemos seleccionar una cuenta con los permisos necesarios (en este caso, sólo las cuentas *Operator* y *Full*). Finalmente, utilizaremos la cuenta *Operator* para desplegar el contrato.
+```
+burrow deploy -f deploy.yaml -a [Operator address]
+```
+
+La ejecución crea un fichero de salida `deploy.output.json` en el que se detalla el hash de la transacción y la dirección del smart contract que acabamos de desplegar.
+
+
+## 5. Interacción con el contrato utilizando JavaScript
+
+Burrow provee una capa de exposición que hace posible la interacción con el nodo desde fuera. Con la configuración que hemos establecido, Burrow muestra diferentes métricas en la ruta `localhost:9102/metrics` e información general sobre la cadena de bloques en `localhost:26658`, a las que se puede acceder mediante JSON-RPC. Además, se puede conectar vía GRPC al puerto `10997` para interactuar con el nodo (envío y recibo de transacciones).
+
+La librería [@monax/burrow](https://github.com/monax/bosmarmot/tree/develop/burrow.js), desarrollada por el equipo de [Monax](https://github.com/monax), es una API JavaScript que permite la comunicación con el nodo Burrow. Vamos a utilizar solo una pequeña parte de esta para probar nuestro smart contract recién desplegado. Si queréis profundizar en ella podéis consultar la documentación que se encuentra en el repositorio.
+
+En el directorio `workspace2` podéis encontrar el archivo [`program.js`](https://github.com/blocknitive/workshop_hyperledger_burrow/blob/master/workspace2/program.js), que se muestra a continuación:
+
+```JavaScript
+const monax = require('@monax/burrow');
+
+var burrowURL = "localhost:10997";
+var account = "[ set your account address]";
+var options = {objectReturn: true};
+var burrow = monax.createInstance(burrowURL, account, options);
+
+var bytecode = "[bytecode]"
+var abi = [abi]
+var contractAddress = "[set your smart contract address]";
+
+var contract = burrow.contracts.new(abi, bytecode, contractAddress);
+
+// GetNombreRegistro()
+contract.getNombreRegistro.at(contractAddress).then(respNombreRegistro => {
+	console.log(respNombreRegistro);
+});
+
+// SetNombreRegistro()
+contract.setNombreRegistro.at(contractAddress, "Hackathon Blocknitive 2019").then(respNombreRegistro => {
+ 	console.log("Nombre modificado.");
+	// GetNombreRegistro()
+	contract.getNombreRegistro.at(contractAddress).then(respNombreRegistro2 => {
+		console.log(respNombreRegistro2);
+	});
+
+});
+```
+
+Este pequeño código javascript realiza las siguientes acciones:
+- Inicializa el acceso al nodo Burrow y carga la instancia del contrato.
+- Llama a una función para leer el nombre del registro.
+- Modifica el nombre del registro.
+- Vuelve a leer el nombre del registro para comprobar la modificación.
+
+Antes de nada, debemos inicializar el proyecto e instalar la libreria:
+```
+npm init -y
+npm install --save @monax/burrow
+```
+
+En el código se hacen dos lecturas y una escritura. Como podéis esperar no todas las cuentas podrán ejecutar este código por completo. Os invito a que probéis vosotros mismos lo que ocurre al ejecutar el código con diferentes cuentas. Podéis seleccionar el *address* de las cuentas ayudándoos de `burrow keys list` y ejecutarlo mediante `node program.js`. No os olvidéis de indicar el ABI, bytecode y dirección del smart contract recién desplegado.
+
+
+***
+
+Hasta aquí el workshop de Hyperledger Burrow. Esperamos que os haya parecido interesante este proyecto. En Blocknitive estamos muy atentos al desarrollo de la plataforma, porque, aunque se encuentre en estado de incubación, el código está disponible y como veis, se puede trabajar con él.
+
+
+¡Nos vemos en la próxima!
+### See you soon BlockchainDevelopers!
